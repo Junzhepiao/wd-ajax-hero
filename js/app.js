@@ -57,4 +57,57 @@
   };
 
   // ADD YOUR CODE HERE
+  var search = document.getElementById("search");
+  search.required = true; 
+
+  var submit = document.getElementsByTagName('form')[0];
+
+  submit.addEventListener("submit", function(event) {
+    // Prevents the default action
+    event.preventDefault();
+    var formData = document.getElementsByTagName('input')[0];
+    var title = formData.value;
+
+    var url = `https://omdb-api.now.sh/?s=${title}`;
+    fetch (url)
+      .then(function(pObj) {
+        return pObj.json();
+      })
+      .then(function(json) {
+        var arrayP = [];
+        for (var i = 0; i < json.Search.length; i++) {
+          var id = json.Search[i].imdbID;
+          // AJAX request for each individual title by id
+          var url2 = `https://omdb-api.now.sh/?i=${id}`;
+          arrayP.push(fetch (url2)
+            .then(function(pObj2) {
+              return pObj2.json();
+            })
+            .then (function(json2) {
+              var tempObj = {};
+              tempObj.plot = json2.Plot;
+              tempObj.id = json2.imdbID;
+              tempObj.poster = json2.Poster;
+              tempObj.title = json2.Title;
+              tempObj.year = json2.Year;
+              return (tempObj);
+            }));
+        }
+        // Waits for all Promises to resolve then executes
+        Promise.all(arrayP)
+          .then(function(array) {
+            array.map(function(obj) {
+              movies.push(obj);
+            });
+            renderMovies();
+          });
+      })
+      .catch(function(error) {
+        console.log(error);
+        throw error;
+      });
+    // Resets the previous search and clears movies array
+    formData.value = "";
+    movies.splice(0, movies.length);
+  });
 })();
